@@ -66,9 +66,10 @@ function startGame() {
     cardImg.src = "./cards/" + card + ".png";
     dealerSum += getValue(card);
     dealerAceCount += checkAce(card);
-    dealerSum = reduceAce(dealerSum, dealerAceCount);
+
     document.getElementById("dealerCards").append(cardImg);
   }
+  dealerSum = reduceAce(dealerSum, dealerAceCount);
   console.log("Dealer Sum:" + dealerSum);
   document.getElementById("dealerSum").innerText =
     (dealerSum - getValue(hidden)).toString() + " + Unknown";
