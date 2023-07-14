@@ -14,7 +14,7 @@ var canHit = true;
 window.onload = function () {
   buildDeck();
   shuffleDeck();
-  startGame();
+  startBlackjack();
   document.getElementById("hit").addEventListener("click", hit);
   document.getElementById("stand").addEventListener("click", stand);
 };
@@ -55,7 +55,7 @@ function shuffleDeck() {
   //console.log(deck);
 }
 //--------------------------------------------------------------------------------------------------
-function startGame() {
+function startBlackjack() {
   hidden = deck.pop();
   dealerSum += getValue(hidden);
   dealerAceCount += checkAce(hidden);
@@ -66,23 +66,29 @@ function startGame() {
   dealerAceCount += checkAce(card);
   dealerSum = reduceAce(dealerSum, dealerAceCount);
   document.getElementById("dealerCards").append(cardImg);
-
-  //console.log("Dealer Sum:" + dealerSum);
   document.getElementById("dealerSum").innerText =
     (dealerSum - getValue(hidden)).toString() + " + Unknown";
 
+  let playerCards = [];
   for (let i = 0; i < 2; i++) {
     let cardImg = document.createElement("img");
     let card = deck.pop();
     cardImg.src = "./cards/" + card + ".png";
+    playerCards.push(card);
     playerSum += getValue(card);
     playerAceCount += checkAce(card);
     document.getElementById("playerCards").append(cardImg);
   }
-  document.getElementById("playerSum").innerText = playerSum;
 
-  //console.log("Player Sum:" + playerSum);
+  // Check if the player has been dealt two aces with a total greater than 21
+  if (playerCards.length === 2 && playerAceCount === 2 && playerSum > 21) {
+    playerSum -= 10; // Reduce the total by 10 to account for one ace being counted as 11
+    playerAceCount--;
+  }
+
+  document.getElementById("playerSum").innerText = playerSum;
 }
+
 //--------------------------------------------------------------------------------------------------
 function hit() {
   if (!canHit) {
@@ -134,10 +140,12 @@ function stand() {
 
     if (dealerSum > 21) {
       message = "You Win, the dealer went bust and you didn't.";
+      playWin();
     } else if (playerSum == dealerSum) {
       message = "Dealer Wins, you tied!";
     } else if (playerSum > dealerSum) {
       message = "You win, you got more than the dealer.";
+      playWin();
     } else if (playerSum < dealerSum) {
       message = "You Lose, the dealer got more than you.";
     }
@@ -189,3 +197,8 @@ function refresh() {
   location.reload();
 }
 //--------------------------------------------------------------------------------------------------
+
+function playWin() {
+  var audio = new Audio("audio_file.mp3");
+  audio.play();
+}
