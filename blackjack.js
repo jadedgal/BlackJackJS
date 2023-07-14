@@ -117,15 +117,19 @@ function stand() {
   if (playerSum > 21) {
     message = "You Lose, you went bust.";
   } else {
-    while (dealerSum < 17) {
+    while (dealerSum < 17 || (dealerSum === 17 && dealerAceCount > 0)) {
       let cardImg = document.createElement("img");
       let card = deck.pop();
       cardImg.src = "./cards/" + card + ".png";
       dealerSum += getValue(card);
       dealerAceCount += checkAce(card);
-
+      if (dealerSum > 21 && dealerAceCount > 0) {
+        dealerSum = reduceAce(dealerSum, dealerAceCount);
+        dealerAceCount--;
+      }
       document.getElementById("dealerCards").append(cardImg);
     }
+
     dealerSum = reduceAce(dealerSum, dealerAceCount);
 
     if (dealerSum > 21) {
