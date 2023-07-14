@@ -59,16 +59,13 @@ function startGame() {
   hidden = deck.pop();
   dealerSum += getValue(hidden);
   dealerAceCount += checkAce(hidden);
+  let cardImg = document.createElement("img");
+  let card = deck.pop();
+  cardImg.src = "./cards/" + card + ".png";
+  document.getElementById("dealerCards").appendChild(cardImg);
+  dealerSum += getValue(card);
+  dealerAceCount += checkAce(card);
 
-  while (dealerSum < 17) {
-    let cardImg = document.createElement("img");
-    let card = deck.pop();
-    cardImg.src = "./cards/" + card + ".png";
-    dealerSum += getValue(card);
-    dealerAceCount += checkAce(card);
-
-    document.getElementById("dealerCards").append(cardImg);
-  }
   dealerSum = reduceAce(dealerSum, dealerAceCount);
   console.log("Dealer Sum:" + dealerSum);
   document.getElementById("dealerSum").innerText =
@@ -104,39 +101,56 @@ function hit() {
   }
   playerSum = reduceAce(playerSum, playerAceCount);
   document.getElementById("playerSum").innerText = playerSum;
+  if (playerSum > 21) {
+    stand();
+  }
 }
 
 function stand() {
   dealerSum = reduceAce(dealerSum, dealerAceCount);
   playerSum = reduceAce(playerSum, playerAceCount);
-
-  canHit = false;
-  document.getElementById("hidden").src = "./cards/" + hidden + ".png";
-
-  let message = "";
   if (playerSum > 21) {
-    message = "You Lose, you went bust.";
-  } else if (dealerSum > 21 && playerSum <= 21) {
-    message = "You Win, the dealer went bust and you didn't.";
-  } else if (playerSum == dealerSum) {
-    message = "Dealer Wins, you tied!";
-  } else if (playerSum > dealerSum) {
-    message = "You win, you got more than the dealer.";
-  } else if (playerSum < dealerSum) {
-    message = "You Lose, the dealer got more than you.";
-  }
+    document.getElementById("results").innerText = "You Lose, You Bust";
+    document.getElementById("hidden").src = "./cards/" + hidden + ".png";
+  } else {
+    while (dealerSum < 17) {
+      let cardImg = document.createElement("img");
+      let card = deck.pop();
+      cardImg.src = "./cards/" + card + ".png";
+      dealerSum += getValue(card);
+      dealerAceCount += checkAce(card);
 
-  if (!hasStood) {
-    document.getElementById("dealerSum").innerText = dealerSum;
-    document.getElementById("results").innerText = message;
-    container = document.getElementById("refreshContainer");
-    var retryButton = document.createElement("button");
-    retryButton.innerText = "Retry";
-    retryButton.className = "button";
-    retryButton.addEventListener("click", refresh);
-    container.appendChild(retryButton);
+      document.getElementById("dealerCards").append(cardImg);
+    }
+
+    canHit = false;
+    document.getElementById("hidden").src = "./cards/" + hidden + ".png";
+
+    let message = "";
+    if (playerSum > 21) {
+      message = "You Lose, you went bust.";
+    } else if (dealerSum > 21 && playerSum <= 21) {
+      message = "You Win, the dealer went bust and you didn't.";
+    } else if (playerSum == dealerSum) {
+      message = "Dealer Wins, you tied!";
+    } else if (playerSum > dealerSum) {
+      message = "You win, you got more than the dealer.";
+    } else if (playerSum < dealerSum) {
+      message = "You Lose, the dealer got more than you.";
+    }
+
+    if (!hasStood) {
+      document.getElementById("dealerSum").innerText = dealerSum;
+      document.getElementById("results").innerText = message;
+      container = document.getElementById("refreshContainer");
+      var retryButton = document.createElement("button");
+      retryButton.innerText = "Retry";
+      retryButton.className = "button";
+      retryButton.addEventListener("click", refresh);
+      container.appendChild(retryButton);
+    }
+    hasStood = true;
   }
-  hasStood = true;
 }
 
 function getValue(card) {
