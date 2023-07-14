@@ -123,9 +123,10 @@ function stand() {
       cardImg.src = "./cards/" + card + ".png";
       dealerSum += getValue(card);
       dealerAceCount += checkAce(card);
-      dealerSum = reduceAce(dealerSum, dealerAceCount);
+
       document.getElementById("dealerCards").append(cardImg);
     }
+    dealerSum = reduceAce(dealerSum, dealerAceCount);
 
     if (dealerSum > 21) {
       message = "You Win, the dealer went bust and you didn't.";
