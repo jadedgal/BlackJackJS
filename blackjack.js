@@ -11,7 +11,7 @@ var deck;
 
 var canHit = true;
 var splitted = false;
-
+var canSplit = true;
 //--------------------------------------------------------------------------------------------------
 window.onload = function () {
   buildDeck();
@@ -123,6 +123,7 @@ function hit() {
     return;
   }
   if (!splitted) {
+    canSplit = false;
     let cardImg = document.createElement("img");
     let card = deck.pop();
     cardImg.src = "./cards/" + card + ".png";
