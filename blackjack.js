@@ -65,43 +65,48 @@ function shuffleDeck() {
 //--------------------------------------------------------------------------------------------------
 function startBlackjack() {
   if (playerMoney >= bet_baseline) {
-    hidden = deck.pop();
-    dealerSum += getValue(hidden);
-    dealerAceCount += checkAce(hidden);
-    let cardImg = document.createElement("img");
-    let card = deck.pop();
-    cardImg.src = "./cards/" + card + ".png";
-    dealerSum += getValue(card);
-    dealerAceCount += checkAce(card);
-    dealerSum = reduceAce(dealerSum, dealerAceCount);
-    document.getElementById("dealerCards").append(cardImg);
-    document.getElementById("dealerSum").innerText =
-      (dealerSum - getValue(hidden)).toString() + " + Unknown";
-    document.getElementById("dealerMoney").innerText = dealerMoney;
-
-    let playerCards = [];
-    for (let i = 0; i < 2; i++) {
+    if (deck.length >= 4) {
+      hidden = deck.pop();
+      dealerSum += getValue(hidden);
+      dealerAceCount += checkAce(hidden);
       let cardImg = document.createElement("img");
       let card = deck.pop();
       cardImg.src = "./cards/" + card + ".png";
-      playerCards.push(card);
-      playerSum += getValue(card);
-      playerAceCount += checkAce(card);
-      document.getElementById("playerCards").append(cardImg);
+      dealerSum += getValue(card);
+      dealerAceCount += checkAce(card);
+      dealerSum = reduceAce(dealerSum, dealerAceCount);
+      document.getElementById("dealerCards").append(cardImg);
+      document.getElementById("dealerSum").innerText =
+        (dealerSum - getValue(hidden)).toString() + " + Unknown";
+      document.getElementById("dealerMoney").innerText = dealerMoney;
+
+      let playerCards = [];
+      for (let i = 0; i < 2; i++) {
+        let cardImg = document.createElement("img");
+        let card = deck.pop();
+        cardImg.src = "./cards/" + card + ".png";
+        playerCards.push(card);
+        playerSum += getValue(card);
+        playerAceCount += checkAce(card);
+        document.getElementById("playerCards").append(cardImg);
+      }
+
+      // Check if the player has been dealt two aces with a total greater than 21
+      if (playerCards.length === 2 && playerAceCount === 2 && playerSum > 21) {
+        playerSum -= 10; // Reduce the total by 10 to account for one ace being counted as 11
+        playerAceCount--;
+      }
+
+      document.getElementById("playerSum").innerText = playerSum;
+      playerMoney -= bet_baseline
+      document.getElementById("playerMoney").innerText = playerMoney;
+
+
+      naturals()
+    } else{
+      buildDeck()
+      shuffleDeck()
     }
-
-    // Check if the player has been dealt two aces with a total greater than 21
-    if (playerCards.length === 2 && playerAceCount === 2 && playerSum > 21) {
-      playerSum -= 10; // Reduce the total by 10 to account for one ace being counted as 11
-      playerAceCount--;
-    }
-
-    document.getElementById("playerSum").innerText = playerSum;
-    playerMoney -= bet_baseline
-    document.getElementById("playerMoney").innerText = playerMoney;
-
-
-    naturals()
   } else {
     alert("You are broke!")
     location.reload()
@@ -175,6 +180,8 @@ function hit() {
       }
     } else {
       buildDeck()
+      deck.splice(deck.findIndex(playerCards.childNodes[0].src.split("cards/")[1].split("-")[0]),1)
+      deck.splice(deck.findIndex(playerCards.childNodes[1].src.split("cards/")[1].split("-")[0]),1)
       shuffleDeck()
       hit()
     }
@@ -200,6 +207,8 @@ function hit() {
       }
     }else{
       buildDeck()
+      deck.splice(deck.findIndex(playerCards.childNodes[0].src.split("cards/")[1].split("-")[0]),1)
+      deck.splice(deck.findIndex(playerCards.childNodes[1].src.split("cards/")[1].split("-")[0]),1)
       shuffleDeck()
       hit()
     }
