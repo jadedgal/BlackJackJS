@@ -5,7 +5,509 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlackJack</title>
     <link rel="stylesheet" href="blackjack.css" />
-    <script src="blackjack.js"></script>
+    <script>
+var dealerSum = 0;
+var playerSum = 0;
+
+var hasStood = false;
+
+var dealerAceCount = 0;
+var playerAceCount = 0;
+
+var hidden;
+var deck;
+
+var canHit = true;
+var splitted = false;
+var canSplit = true;
+var playerMoney;
+if (localStorage.getItem("money") === null || localStorage.getItem("money") < 20){
+	playerMoney = 100;
+	localStorage.setItem("money","100");
+}else{
+	playerMoney = Number(localStorage.getItem("money"));
+}
+var dealerMoney = 1000;
+var bet_baseline = 20;
+var bet = "base";
+//--------------------------------------------------------------------------------------------------
+window.onload = function () {
+  buildDeck();
+  shuffleDeck();
+  startBlackjack();
+  checksplit();
+  document.getElementById("hit").addEventListener("click", hit);
+  document.getElementById("stand").addEventListener("click", stand);
+  document.getElementById("split").addEventListener("click", split);
+};
+//--------------------------------------------------------------------------------------------------
+function buildDeck() {
+  let values = [
+    "A",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "J",
+    "Q",
+    "K",
+  ];
+  let types = ["C", "D", "H", "S"];
+  deck = [];
+
+  for (let i = 0; i < types.length; i++) {
+    for (let j = 0; j < values.length; j++) {
+      deck.push(values[j] + "-" + types[i]);
+    }
+  }
+}
+//--------------------------------------------------------------------------------------------------
+function shuffleDeck() {
+  for (let i = 0; i < deck.length; i++) {
+    let j = Math.floor(Math.random() * deck.length);
+    let temp = deck[i];
+    deck[i] = deck[j];
+    deck[j] = temp;
+  }
+  //console.log(deck);
+}
+//--------------------------------------------------------------------------------------------------
+function startBlackjack() {
+  if (playerMoney >= bet_baseline) {
+    if (deck.length >= 4) {
+      hidden = deck.pop();
+      dealerSum += getValue(hidden);
+      dealerAceCount += checkAce(hidden);
+      let cardImg = document.createElement("img");
+      let card = deck.pop();
+      cardImg.src = "./cards/" + card + ".png";
+      dealerSum += getValue(card);
+      dealerAceCount += checkAce(card);
+      dealerSum = reduceAce(dealerSum, dealerAceCount);
+      document.getElementById("dealerCards").append(cardImg);
+      document.getElementById("dealerSum").innerText =
+        (dealerSum - getValue(hidden)).toString() + " + Unknown";
+      document.getElementById("dealerMoney").innerText = dealerMoney;
+
+      let playerCards = [];
+      for (let i = 0; i < 2; i++) {
+        let cardImg = document.createElement("img");
+        let card = deck.pop();
+        cardImg.src = "./cards/" + card + ".png";
+        playerCards.push(card);
+        playerSum += getValue(card);
+        playerAceCount += checkAce(card);
+        document.getElementById("playerCards").append(cardImg);
+      }
+
+      // Check if the player has been dealt two aces with a total greater than 21
+      if (playerCards.length === 2 && playerAceCount === 2 && playerSum > 21) {
+        playerSum -= 10; // Reduce the total by 10 to account for one ace being counted as 1
+        playerAceCount--;
+      }
+	
+      document.getElementById("playerSum").innerText = playerSum;
+      playerMoney -= bet_baseline
+      document.getElementById("playerMoney").innerText = playerMoney;
+
+
+      naturals()
+    } else{
+      buildDeck()
+      shuffleDeck()
+	restart();
+    }
+  } else {
+    alert("You are broke!")
+    location.reload()
+    return;
+  }
+}  
+//--------------------------------------------------------------------------------------------------
+function naturals(){
+  if (dealerSum == 21) {
+    dealerMoney += bet_baseline;
+    document.getElementById("dealerMoney").innerText = dealerMoney
+  } else if (playerSum == 21 && dealerSum == 21) {
+    playerMoney += bet_baseline;
+    document.getElementById("playerMoney").innerText = playerMoney
+  } else if (playerSum == 21){
+    playerMoney += 1.5 * bet_baseline;
+    dealerMoney -= 0.5 * bet_baseline
+    document.getElementById("playerMoney").innerText = playerMoney
+  } else {
+    return;
+  }
+  restart();
+}
+//--------------------------------------------------------------------------------------------------
+function checksplit() {
+  //pulling the card value directly from the html cause check value uses the src already so id have to pull that anyway
+  let first_value = playerCards.childNodes[0].src.split("cards/")[1].split("-")[0]
+  let second_value = playerCards.childNodes[1].src.split("cards/")[1].split("-")[0]
+  if (isNaN(first_value)) {
+    if (first_value == "A") {
+      first_value = 11;
+    } else {
+      first_value = 10;
+    }
+  }
+  if (isNaN(second_value)) {
+    if (second_value == "A") {
+      second_value = 11;
+    } else {
+      second_value = 10;
+    }
+  }
+  if(first_value == second_value){
+    document.getElementById("split").style.display = "inline-block";
+  } else {
+    document.getElementById("split").style.display = "none";
+  }
+}
+//--------------------------------------------------------------------------------------------------
+function hit() {
+  if (!canHit) {
+    return;
+  }
+  if (!splitted) {
+    canSplit = false;
+    if (deck.length >= 1){
+      let cardImg = document.createElement("img");
+      let card = deck.pop();
+      cardImg.src = "./cards/" + card + ".png";
+      playerSum += getValue(card);
+      playerAceCount += checkAce(card);
+      document.getElementById("playerCards").append(cardImg);
+
+      if (playerSum > 21 && playerAceCount > 0) {
+        playerSum = reduceAce(playerSum, playerAceCount);
+        playerAceCount--;
+      }
+
+      if (playerSum > 21) {
+        stand();
+      }
+    } else {
+      buildDeck()
+      deck.splice(deck.findIndex(playerCards.childNodes[0].src.split("cards/")[1].split("-")[0]),1)
+      deck.splice(deck.findIndex(playerCards.childNodes[1].src.split("cards/")[1].split("-")[0]),1)
+      shuffleDeck()
+      hit()
+    }
+    document.getElementById("playerSum").innerText = playerSum;
+  } else {
+    if (deck.length >= 2){
+      let cardImg = document.createElement("img");
+      let card = deck.pop();
+      cardImg.src = "./cards/" + card + ".png";
+      playerAceCount1 += checkAce(card);
+      document.getElementById("hand1").append(cardImg);
+
+      cardImg = document.createElement("img");
+      card = deck.pop();
+      cardImg.src = "./cards/" + card + ".png";
+      playerAceCount2 += checkAce(card);
+      document.getElementById("hand2").append(cardImg);
+      splitaces()
+      splitsum()
+
+      if (playerSum >= 21) {
+        stand();
+      }
+    }else{
+      buildDeck()
+      deck.splice(deck.findIndex(playerCards.childNodes[0].src.split("cards/")[1].split("-")[0]),1)
+      deck.splice(deck.findIndex(playerCards.childNodes[1].src.split("cards/")[1].split("-")[0]),1)
+      shuffleDeck()
+      hit()
+    }
+  }
+}
+//--------------------------------------------------------------------------------------------------
+function stand() {
+  if (!hasStood) {
+    canHit = false;
+    document.getElementById("hidden").src = "./cards/" + hidden + ".png";
+
+    let message = "";
+    if (playerSum > 21) {
+      message = "You Lose, you went bust.";
+      dealerMoney += bet_baseline
+      document.getElementById("dealerMoney").innerText = dealerMoney
+    } else {
+      while (dealerSum < 17 || (dealerSum === 17 && dealerAceCount > 0)) {
+        let cardImg = document.createElement("img");
+        let card = deck.pop();
+        cardImg.src = "./cards/" + card + ".png";
+        dealerSum += getValue(card);
+        dealerAceCount += checkAce(card);
+        if (dealerSum > 21 && dealerAceCount > 0) {
+          dealerSum = reduceAce(dealerSum, dealerAceCount);
+          dealerAceCount--;
+        }
+        document.getElementById("dealerCards").append(cardImg);
+      }
+      if (bet == "base") {
+        if (dealerSum > 21) {
+          message = "You Win, the dealer went bust and you didn't.";
+          playerMoney += bet_baseline  * 2;
+          dealerMoney -= bet_baseline
+          document.getElementById("playerMoney").innerText = playerMoney
+          playWin();
+        } else if (playerSum == dealerSum) {
+          message = "Dealer Wins, you tied!";
+          dealerMoney += bet_baseline
+          document.getElementById("dealerMoney").innerText = dealerMoney
+        } else if (playerSum > dealerSum) {
+          message = "You win, you got more than the dealer.";
+          playerMoney += bet_baseline * 2
+          dealerMoney -= bet_baseline
+          document.getElementById("playerMoney").innerText = playerMoney
+          playWin();
+        } else if (playerSum < dealerSum) {
+          message = "You Lose, the dealer got more than you.";
+          dealerMoney += bet_baseline
+          document.getElementById("dealerMoney").innerText = dealerMoney
+        }
+      }
+    }
+    document.getElementById("dealerSum").innerText = dealerSum;
+    document.getElementById("results").innerText = message;
+    container = document.getElementById("refreshContainer");
+    var retryButton = document.createElement("button");
+    retryButton.innerText = "Retry";
+    retryButton.className = "button";
+    retryButton.addEventListener("click", restart);
+    container.appendChild(retryButton);
+    hasStood = true;
+  }
+
+localStorage.setItem("money",playerMoney);
+
+}
+
+//--------------------------------------------------------------------------------------------------
+function split(){
+  playerAceCount = 0
+  playerAceCount1 = 0
+  playerAceCount2 = 0
+  splitted = true
+  bet = "split";
+  playerSum = 0;
+  playerMoney -= bet_baseline
+  document.getElementById("split").style.display = "none";
+  
+  list1 = document.createElement("div");
+  list1.className = "cards";
+  list1.id = "hand1";
+  list2 = document.createElement("div");
+  list2.className = "cards";
+  list2.id = "hand2";
+  document.getElementById("player").append(list1)
+  document.getElementById("player").append(list2)
+
+  let cardImg = document.createElement("img");
+  let card = deck.pop();
+  cardImg.src = "./cards/" + card + ".png";
+  document.getElementById("playerCards").append(cardImg);
+
+  cardImg = document.createElement("img");
+  cardImg.src = document.getElementById("playerCards").childNodes[0].src;
+  document.getElementById("playerCards").append(cardImg);
+  document.getElementById("playerCards").removeChild(document.getElementById("playerCards").childNodes[0])
+
+  cardImg = document.createElement("img");
+  card = deck.pop();
+  cardImg.src = "./cards/" + card + ".png";
+  document.getElementById("playerCards").append(cardImg);
+
+  document.getElementById("hand2").append(document.getElementById("playerCards").childNodes[0]);
+  document.getElementById("hand2").append(document.getElementById("playerCards").childNodes[0]);
+  document.getElementById("hand1").append(document.getElementById("playerCards").childNodes[0]);
+  document.getElementById("hand1").append(document.getElementById("playerCards").childNodes[0]);
+  document.getElementById("playerCards").remove();
+  splitaces()
+  splitsum()
+  document.getElementById("playerSum").innerText = playerSum;
+}
+//--------------------------------------------------------------------------------------------------
+function splitsum(){
+  sum1 = 0
+  sum2 = 0
+  for(let i = 0;i < document.getElementById("hand1").childElementCount ;i++){
+    let j = document.getElementById("hand1").childNodes[i].src.split("cards/")[1].split("-")[0]
+    if (isNaN(j)) {
+      if (j == "A") {
+        j = 11;
+      } else {
+        j = 10;
+      }
+    }
+    sum1+= parseInt(j)
+  }
+
+  for(let i = 0;i < document.getElementById("hand2").childElementCount ;i++){
+    let j = document.getElementById("hand2").childNodes[i].src.split("cards/")[1].split("-")[0]
+    if (isNaN(j)) {
+      if (j == "A") {
+        j = 11;
+      } else {
+        j = 10;
+      }
+    }
+    sum2+= parseInt(j)
+  }
+  if (sum1 > 21 && playerAceCount1 > 0) {
+    sum1-=10;
+    playerAceCount1-=1;
+  }
+  if (sum2 > 21 && playerAceCount2 > 0) {
+    sum2-=10;
+    playerAceCount2-=1
+  }
+  if (sum1 > sum2) {
+    playerSum = sum1;
+  } else {
+    playerSum = sum2;
+  }
+  
+  document.getElementById("playerSum").innerText = playerSum;
+}
+//--------------------------------------------------------------------------------------------------
+function splitaces() {
+  playerAceCount1 = 0
+  playerAceCount2 = 0
+  for(let i = 0;i < document.getElementById("hand2").childElementCount;i++){
+    if(document.getElementById("hand2").childNodes[i].src.split("cards/")[1].split("-")[0] == "A"){
+      playerAceCount2 +=1
+      console.log(document.getElementById("hand2").childNodes[i].src.split("cards/")[1].split("-")[0])
+    }
+  }
+  for(let i = 0;i < document.getElementById("hand1").childElementCount;i++){
+    if(document.getElementById("hand1").childNodes[i].src.split("cards/")[1].split("-")[0] == "A"){
+      playerAceCount1 +=1
+    }
+  }
+}
+
+//--------------------------------------------------------------------------------------------------
+function getValue(card) {
+  let data = card.split("-");
+  let value = data[0];
+
+  if (isNaN(value)) {
+    if (value == "A") {
+      return 11;
+    }
+    return 10;
+  }
+  return parseInt(value);
+}
+//--------------------------------------------------------------------------------------------------
+function checkAce(card) {
+  if (card[0] == "A") {
+    return 1;
+  }
+  return 0;
+}
+//--------------------------------------------------------------------------------------------------
+function reduceAce(playerSum, playerAceCount) {
+  while (playerSum > 21 && playerAceCount > 0) {
+    playerSum -= 10;
+    playerAceCount -= 1;
+  }
+  return playerSum;
+}
+//--------------------------------------------------------------------------------------------------
+function restart() {
+  if (!splitted){
+    document.getElementById("playerCards").remove();
+    document.getElementById("dealerCards").remove();
+    document.getElementById("results").innerText ="";
+    if (document.getElementById("refreshContainer").childElementCount >= 1) {
+      document.getElementById("refreshContainer").removeChild(document.getElementById("refreshContainer").childNodes[0])
+    }
+    list1 = document.createElement("div");
+    list1.className = "cards";
+    list1.id = "playerCards";
+    list2 = document.createElement("div");
+    list2.className = "cards";
+    list2.id = "dealerCards";
+    hidden = document.createElement("img");
+    hidden.id = "hidden";
+    hidden.src = "cards/BACK.png";
+    document.getElementById("player").append(list1)
+    document.getElementById("dealer").append(list2)
+    document.getElementById("dealerCards").append(hidden)
+    dealerSum = 0;
+    playerSum = 0;
+
+    hasStood = false;
+
+    dealerAceCount = 0;
+    playerAceCount = 0;
+
+    hidden = 0;
+
+    canHit = true;
+    splitted = false;
+    canSplit = true;
+    startBlackjack()
+  } else {
+    document.getElementById("hand1").remove();
+    document.getElementById("hand2").remove();
+    document.getElementById("dealerCards").remove();
+    document.getElementById("results").innerText ="";
+    if (document.getElementById("refreshContainer").childElementCount >= 1) {
+      document.getElementById("refreshContainer").removeChild(document.getElementById("refreshContainer").childNodes[0])
+    }
+    list1 = document.createElement("div");
+    list1.className = "cards";
+    list1.id = "playerCards";
+    list2 = document.createElement("div");
+    list2.className = "cards";
+    list2.id = "dealerCards";
+    hidden = document.createElement("img");
+    hidden.id = "hidden";
+    hidden.src = "cards/BACK.png";
+    document.getElementById("player").append(list1)
+    document.getElementById("dealer").append(list2)
+    document.getElementById("dealerCards").append(hidden)
+    dealerSum = 0;
+    playerSum = 0;
+
+    hasStood = false;
+
+    dealerAceCount = 0;
+    playerAceCount = 0;
+
+    hidden = 0;
+
+    canHit = true;
+    splitted = false;
+    canSplit = true;
+    startBlackjack()
+  }
+}
+//--------------------------------------------------------------------------------------------------
+
+function playWin() {
+  console.log("win");
+}
+function cheat(){
+	console.log(dealerSum);
+	console.log(deck.slice(-1));
+}
+function skip(){
+	deck.pop();
+}
+</script>
   </head>
   <body>
     <div id="dealer">
