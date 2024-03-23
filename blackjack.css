@@ -17,3 +17,10 @@ body {
 p {
   font-size: large;
 }
+.logo {
+  max-width: 150px;
+  max-height: 150px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
